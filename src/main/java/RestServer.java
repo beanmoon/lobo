@@ -1,3 +1,17 @@
+import com.google.gson.Gson;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlets.GzipFilter;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.util.MimeTypeUtils;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -13,12 +27,7 @@ public class RestServer {
 	public static void main(String[] args) throws Exception {
 		logger.info("Start to load Spring config file");
 		ClassPathXmlApplicationContext appContext = new ClassPathXmlApplicationContext(Mv5ScoringConstants.SPRING_CONFIG_FILE);
-
-		scoringService = (Mv5ScoringService) appContext.getBean("mv5ScoringService");
-		configService = (IConfigService) appContext.getBean("configService");
-		metricsSender = (IMetricsSender) appContext.getBean("metricsSender");
-
-		int port = configService.getConfig().get(Mv5ScoringConstants.CONFIG_SERVER_PORT, Integer.class);
+		int port = 8080;
 
 		logger.info("Prepare to start the Rest Server on {}", port);
 		Server server = new Server(port);
