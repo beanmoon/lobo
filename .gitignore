@@ -1,0 +1,38 @@
+*.class
+
+# Macosx Noise #
+.DS_Store
+profile
+
+# Logs or Test Tools Files
+test-output/
+logs/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+/target/
+
+# Eclipse noise
+.classpath
+.project
+.settings
+.settings/*
+
+# IntelliJ Idea noise
+.idea
+*.iws
+*.ipr
+*.iml
+*.releaseBackup
+atlassian-ide-plugin.xml
+
+# NB noise
+nbactions.xml
+nb-configuration.xml
+
+# Maven plugins noise #
+dependency-reduced-pom.xml
+pom.xml.versionsBackup
+
