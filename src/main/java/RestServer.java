@@ -1,4 +1,7 @@
 import com.google.gson.Gson;
+import com.jd.lobo.bean.RequestBody;
+import com.jd.lobo.bean.RequestType;
+import com.jd.lobo.config.LoboConstants;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -18,7 +21,6 @@ import java.util.Map;
 
 public class RestServer {
 	static Logger logger = LoggerFactory.getLogger(RestServer.class);
-
 	static Gson gson = new Gson();
 
 	@SuppressWarnings("resource")
@@ -41,9 +43,8 @@ public class RestServer {
 
 		handler.addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-		handler.addServletWithMapping(Mv5GetRecResultServlet.class, "/recommend/mv5/list");
-		handler.addServletWithMapping(Mv5GetCoudanResultServlet.class, "/recommend/mv5/free");
-		handler.addServletWithMapping(JdxhItemTagsServlet.class, "/recommend/mv5/tags");
+		handler.addServletWithMapping(JsonRequestServlet.class, "/recommend/mv5/list");
+		handler.addServletWithMapping(HtmlRequstServlet.class, "/recommend/mv5/free");
 
 		server.start();
 		logger.info("Server started successfully.");
@@ -52,64 +53,45 @@ public class RestServer {
 	}
 
 	@SuppressWarnings("serial")
-	public static class Mv5GetRecResultServlet extends HttpServlet {
+	public static class JsonRequestServlet extends HttpServlet {
 
 		@Override
 		protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			doPostAction(request, response, ActionType.GET_REC);
+			doPostAction(request, response, RequestType.JSON);
 		}
 	}
 
 	@SuppressWarnings("serial")
-	public static class Mv5GetCoudanResultServlet extends HttpServlet {
+	public static class HtmlRequstServlet extends HttpServlet {
 
 		@Override
 		protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			doPostAction(request, response, ActionType.GET_COUDAN);
+			doPostAction(request, response, RequestType.HTML);
 		}
 	}
 
-	@SuppressWarnings("serial")
-	public static class JdxhItemTagsServlet extends HttpServlet {
 
-		@Override
-		protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			doPostAction(request, response, ActionType.GET_TAGS);
-		}
-	}
-
-	static void doPostAction(HttpServletRequest request, HttpServletResponse response, ActionType actionType) throws ServletException, IOException {
+	static void doPostAction(HttpServletRequest request, HttpServletResponse response, RequestType requestType) throws ServletException, IOException {
 
 		try {
-			Mv5RequestBody requestJsonObject = gson.fromJson(request.getReader(), Mv5RequestBody.class);
+			RequestBody requestJsonObject = gson.fromJson(request.getReader(), RequestBody.class);
 
 			if (requestJsonObject == null) {
 				logger.error("Invalid request input " + request.getReader());
-				throw new DetailedRuntimeException(ParamValidationErrorCode.INVALID_INPUT);
+				throw new Exception("invalid request input");
 			}
 
 			logger.info("params {}", gson.toJson(requestJsonObject));
 
-			Object r;
-			switch (actionType) {
-			case GET_REC:
-				overallFuncMonHandler = metricsSender.createFuncHandler("jinggang.pdserver." + configService.getConfig().get(CommonConstants.CONFIG_METRICS_PREFIX, String.class)
-						+ ".rec.overall.timecost");
-				overallFuncMonHandler.startFuncMonitor();
-				r = scoringService.getRecResult(requestJsonObject);
+			Object r = null;
+			switch (requestType) {
+				case JSON:
+
 				break;
-			case GET_COUDAN:
-				overallFuncMonHandler = metricsSender.createFuncHandler("jinggang.pdserver." + configService.getConfig().get(CommonConstants.CONFIG_METRICS_PREFIX, String.class)
-						+ ".coudan.overall.timecost");
-				overallFuncMonHandler.startFuncMonitor();
-				r = scoringService.getCoudanResult(requestJsonObject);
+				case HTML:
+
 				break;
-			case GET_TAGS:
-				overallFuncMonHandler = metricsSender.createFuncHandler("jinggang.pdserver." + configService.getConfig().get(CommonConstants.CONFIG_METRICS_PREFIX, String.class)
-						+ ".tags.overall.timecost");
-				overallFuncMonHandler.startFuncMonitor();
-				r = scoringService.getSkuTags(requestJsonObject);
-				break;
+
 			default:
 				r = null;
 				break;
@@ -122,20 +104,7 @@ public class RestServer {
 			err.message = "";
 			result.put("error", err);
 
-			response.setContentType(AppCommonConstants.SCORINGSERVER_CONTENTTYPE_JSON_UTF8);
-			response.setStatus(HttpServletResponse.SC_OK);
-
-			response.getWriter().println(gson.toJson(result));
-		} catch (DetailedRuntimeException e) {
-			logger.error("Error happend when processing: " + e.getErrorMessage(), e);
-
-			Map<String, Object> result = new HashMap<>();
-			Error err = new Error();
-			err.code = e.getCodeNumber();
-			err.message = e.getErrorMessage();
-			result.put("error", err);
-
-			response.setContentType(AppCommonConstants.SCORINGSERVER_CONTENTTYPE_JSON_UTF8);
+			response.setContentType(LoboConstants.CONTENTTYPE_JSON_UTF8);
 			response.setStatus(HttpServletResponse.SC_OK);
 
 			response.getWriter().println(gson.toJson(result));
@@ -144,17 +113,15 @@ public class RestServer {
 
 			Map<String, Object> result = new HashMap<>();
 			Error err = new Error();
-			err.code = Mv5ScoringConstants.DEFAULT_ERROR_CDOE;
+			err.code = LoboConstants.DEFAULT_ERROR_CDOE;
 			err.message = "Internal server error: " + ex.getMessage();
 			result.put("error", err);
 
-			response.setContentType(AppCommonConstants.SCORINGSERVER_CONTENTTYPE_JSON_UTF8);
+			response.setContentType(LoboConstants.CONTENTTYPE_JSON_UTF8);
 			response.setStatus(HttpServletResponse.SC_OK);
 
 			response.getWriter().println(gson.toJson(result));
-		} finally {
-			overallFuncMonHandler.endFuncMonitor();
-		}
+		} 
 	}
 
 	public static class Error {
