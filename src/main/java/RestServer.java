@@ -3,9 +3,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlets.GzipFilter;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.util.MimeTypeUtils;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -16,7 +15,6 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class RestServer {
 	static Logger logger = LoggerFactory.getLogger(RestServer.class);
@@ -26,7 +24,6 @@ public class RestServer {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
 		logger.info("Start to load Spring config file");
-		ClassPathXmlApplicationContext appContext = new ClassPathXmlApplicationContext(Mv5ScoringConstants.SPRING_CONFIG_FILE);
 		int port = 8080;
 
 		logger.info("Prepare to start the Rest Server on {}", port);
@@ -36,7 +33,8 @@ public class RestServer {
 		server.setHandler(handler);
 
 		FilterHolder holder = new FilterHolder(GzipFilter.class);
-		holder.setInitParameter("mimetypes", MimeTypeUtils.APPLICATION_JSON_VALUE);
+		// holder.setInitParameter("mimetypes", MimeTypeUtils.APPLICATION_JSON_VALUE);
+		holder.setInitParameter("mimetypes", "application/json");
 		holder.setInitParameter("deflateCompressionLevel", "9");
 		holder.setInitParameter("minGzipSize", "0");
 		holder.setInitParameter("methods", "GET,POST");
@@ -81,7 +79,7 @@ public class RestServer {
 	}
 
 	static void doPostAction(HttpServletRequest request, HttpServletResponse response, ActionType actionType) throws ServletException, IOException {
-		IMonitoringHandler overallFuncMonHandler = null;
+
 		try {
 			Mv5RequestBody requestJsonObject = gson.fromJson(request.getReader(), Mv5RequestBody.class);
 
