@@ -9,4 +9,6 @@ public class LoboConstants {
 	public static Integer PORT = 16010;
 	public static Integer DEFAULT_CASS_FETCH_SIZE = 200;
 	public static Integer DFEAULT_CASS_FETCH_TIMEOUT = 300;
+	public static Integer DEFAULT_PAGE_SIZE = 20;
+
 }

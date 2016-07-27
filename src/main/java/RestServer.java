@@ -29,7 +29,6 @@ public class RestServer {
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
-		logger.info("Start to load Spring config file");
 		PropertyConfigurator.configure("log4j.properties");
 
 		logger.info("Prepare to start the Rest Server on {}", LoboConstants.PORT);
@@ -79,26 +78,51 @@ public class RestServer {
 
 
 	static void doPostAction(HttpServletRequest request, HttpServletResponse response, RequestType requestType) throws ServletException, IOException {
-
 		try {
-			CommentRequstBody commentRequstBody = gson.fromJson(request.getReader(), CommentRequstBody.class);
-
-			if (commentRequstBody == null) {
-				logger.error("Invalid request input " + request.getReader());
-				throw new Exception("invalid request input");
-			}
-
-			logger.info("params {}", gson.toJson(commentRequstBody));
-
 			Object r = null;
 			switch (requestType) {
 				case JSON:
-					r = commentFetcher.fetchComment(commentRequstBody.spuId);
+					// logger.info("reader: " + request.getReader().readLine());
+					String paramStr = request.getReader().readLine();
+					CommentRequstBody commentRequstBody = new CommentRequstBody();
+					if(paramStr.startsWith("{")){
+						commentRequstBody = gson.fromJson(paramStr, CommentRequstBody.class);
+					} else {
+						String[] params = paramStr.split("&");
+						if(params.length == 3){
+							for(String param : params){
+								String[] keyValue = param.split("=");
+								switch (keyValue[0]){
+									case "spu_id":
+										commentRequstBody.setSpuId(Long.valueOf(keyValue[1]));
+										break;
+									case "page":
+										commentRequstBody.setPage(Integer.valueOf(keyValue[1]));
+										break;
+									case "page_size":
+										commentRequstBody.setPageSize(Integer.valueOf(keyValue[1]));
+										break;
+								}
+							}
+						}
+					}
+
+
+					if (commentRequstBody == null) {
+						logger.error("Invalid request input " + request.getReader());
+						throw new Exception("invalid request input");
+					}
+
+					logger.info("params {}", gson.toJson(commentRequstBody));
+
+					logger.info("comment request received!");
+
+					r = commentFetcher.fetchComment(commentRequstBody);
 					break;
 				case HTML:
+					logger.info("page request received!");
 
 					break;
-
 				default:
 					r = null;
 					break;
@@ -109,10 +133,8 @@ public class RestServer {
 				r = "empty result returned!";
 
 			result.put("data", r);
-			Error err = new Error();
-			err.code = 0;
-			err.message = "";
-			result.put("error", err);
+			result.put("code", 0);
+			result.put("message", "");
 
 			response.setContentType(LoboConstants.CONTENTTYPE_JSON_UTF8);
 			response.setStatus(HttpServletResponse.SC_OK);
