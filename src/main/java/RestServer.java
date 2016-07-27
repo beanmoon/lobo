@@ -27,11 +27,10 @@ public class RestServer {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
 		logger.info("Start to load Spring config file");
-		int port = 16010;
 		PropertyConfigurator.configure("log4j.properties");
 
-		logger.info("Prepare to start the Rest Server on {}", port);
-		Server server = new Server(port);
+		logger.info("Prepare to start the Rest Server on {}", LoboConstants.PORT);
+		Server server = new Server(LoboConstants.PORT);
 
 		ServletHandler handler = new ServletHandler();
 		server.setHandler(handler);
@@ -45,8 +44,8 @@ public class RestServer {
 
 		handler.addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-		handler.addServletWithMapping(JsonRequestServlet.class, "/recommend/mv5/list");
-		handler.addServletWithMapping(HtmlRequstServlet.class, "/recommend/mv5/free");
+		handler.addServletWithMapping(JsonRequestServlet.class, "/lobo/comment");
+		handler.addServletWithMapping(HtmlRequstServlet.class, "/lobo/page");
 
 		server.start();
 		logger.info("Server started successfully.");

@@ -6,4 +6,5 @@ package com.jd.lobo.config;
 public class LoboConstants {
 	public static final  String CONTENTTYPE_JSON_UTF8 = "application/json; charset=UTF-8";
 	public static Integer DEFAULT_ERROR_CDOE = 202;
+	public static Integer PORT = 16010;
 }
