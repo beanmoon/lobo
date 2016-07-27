@@ -1,7 +1,9 @@
 import com.google.gson.Gson;
-import com.jd.lobo.bean.RequestBody;
+import com.jd.lobo.bean.CommentRequstBody;
 import com.jd.lobo.bean.RequestType;
+import com.jd.lobo.cass.CassSessionFactory;
 import com.jd.lobo.config.LoboConstants;
+import com.jd.lobo.util.CommentFetcher;
 import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class RestServer {
 	static Logger logger = LoggerFactory.getLogger(RestServer.class);
 	static Gson gson = new Gson();
+	public static CommentFetcher commentFetcher = null;
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
@@ -47,7 +50,10 @@ public class RestServer {
 		handler.addServletWithMapping(JsonRequestServlet.class, "/lobo/comment");
 		handler.addServletWithMapping(HtmlRequstServlet.class, "/lobo/page");
 
+		CassSessionFactory.init(new String[]{"127.0.0.1"});
+		commentFetcher = new CommentFetcher();
 		server.start();
+
 		logger.info("Server started successfully.");
 
 		server.join();
@@ -75,31 +81,33 @@ public class RestServer {
 	static void doPostAction(HttpServletRequest request, HttpServletResponse response, RequestType requestType) throws ServletException, IOException {
 
 		try {
-			RequestBody requestJsonObject = gson.fromJson(request.getReader(), RequestBody.class);
+			CommentRequstBody commentRequstBody = gson.fromJson(request.getReader(), CommentRequstBody.class);
 
-			if (requestJsonObject == null) {
+			if (commentRequstBody == null) {
 				logger.error("Invalid request input " + request.getReader());
 				throw new Exception("invalid request input");
 			}
 
-			logger.info("params {}", gson.toJson(requestJsonObject));
+			logger.info("params {}", gson.toJson(commentRequstBody));
 
 			Object r = null;
 			switch (requestType) {
 				case JSON:
-
-				break;
+					r = commentFetcher.fetchComment(commentRequstBody.spuId);
+					break;
 				case HTML:
 
-				break;
+					break;
 
-			default:
-				r = null;
-				break;
+				default:
+					r = null;
+					break;
 			}
 
 			Map<String, Object> result = new HashMap<>();
-			r = "hello,world";
+			if(r == null)
+				r = "empty result returned!";
+
 			result.put("data", r);
 			Error err = new Error();
 			err.code = 0;
@@ -123,7 +131,7 @@ public class RestServer {
 			response.setStatus(HttpServletResponse.SC_OK);
 
 			response.getWriter().println(gson.toJson(result));
-		} 
+		}
 	}
 
 	public static class Error {
