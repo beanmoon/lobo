@@ -2,6 +2,7 @@ import com.google.gson.Gson;
 import com.jd.lobo.bean.RequestBody;
 import com.jd.lobo.bean.RequestType;
 import com.jd.lobo.config.LoboConstants;
+import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -26,7 +27,8 @@ public class RestServer {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
 		logger.info("Start to load Spring config file");
-		int port = 8080;
+		int port = 16010;
+		PropertyConfigurator.configure("log4j.properties");
 
 		logger.info("Prepare to start the Rest Server on {}", port);
 		Server server = new Server(port);
@@ -98,6 +100,7 @@ public class RestServer {
 			}
 
 			Map<String, Object> result = new HashMap<>();
+			r = "hello,world";
 			result.put("data", r);
 			Error err = new Error();
 			err.code = 0;
