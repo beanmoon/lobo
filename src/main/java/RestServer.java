@@ -1,5 +1,6 @@
 import com.google.gson.Gson;
 import com.jd.lobo.bean.CommentRequstBody;
+import com.jd.lobo.bean.InsertBody;
 import com.jd.lobo.bean.RequestType;
 import com.jd.lobo.cass.CassSessionFactory;
 import com.jd.lobo.config.LoboConstants;
@@ -50,6 +51,8 @@ public class RestServer {
 		handler.addServletWithMapping(CommentByDateRequestServlet.class, "/lobo/day/comment");
 		handler.addServletWithMapping(CountRequestServlet.class, "/lobo/count");
 		handler.addServletWithMapping(HtmlRequstServlet.class, "/lobo/page");
+		handler.addServletWithMapping(InsertRequestServlet.class, "/lobo/insert");
+
 
 		CassSessionFactory.init(new String[]{"127.0.0.1"});
 		commentFetcher = new CommentFetcher();
@@ -90,6 +93,12 @@ public class RestServer {
 		}
 	}
 
+	public static class InsertRequestServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+			doPostAction(req, resp, RequestType.INSERT);
+		}
+	}
 
 	static void doPostAction(HttpServletRequest request, HttpServletResponse response, RequestType requestType) throws ServletException, IOException {
 		try {
@@ -97,66 +106,108 @@ public class RestServer {
 			String paramStr = request.getReader().readLine();
 			logger.info("paramStr: " + paramStr);
 			CommentRequstBody commentRequstBody = new CommentRequstBody();
+			Map<String, Object> result = new HashMap<>();
 
-			if(paramStr.startsWith("{")){
-				commentRequstBody = gson.fromJson(paramStr, CommentRequstBody.class);
-			} else {
-				String[] params = paramStr.split("&");
-				if(params.length > 0){
-					for(String param : params){
-						String[] keyValue = param.split("=");
-						switch (keyValue[0]){
-							case "spu_id":
-								commentRequstBody.setSpuId(Long.valueOf(keyValue[1]));
-								break;
-							case "page":
-								commentRequstBody.setPage(Integer.valueOf(keyValue[1]));
-								break;
-							case "page_size":
-								commentRequstBody.setPageSize(Integer.valueOf(keyValue[1]));
-								break;
-							case "day_time":
-								commentRequstBody.setDayTime(Long.valueOf(keyValue[1]));
-								break;
+			if (requestType.equals(RequestType.INSERT)) {
+				InsertBody insertBody = null;
+				if(paramStr.startsWith("{")){
+					insertBody = gson.fromJson(paramStr, InsertBody.class);
+				} else {
+					String[] params = paramStr.split("&");
+					if (params.length > 0) {
+						for (String param : params) {
+							String[] keyValue = param.split("=");
+							switch (keyValue[0]) {
+								case "spu_id":
+									insertBody.setSpuId(Long.valueOf(keyValue[1]));
+									break;
+								case "sku_id":
+									insertBody.setSkuId(Long.valueOf(keyValue[1]));
+									break;
+								case "user_id":
+									insertBody.setUserId(Long.valueOf(keyValue[1]));
+									break;
+								case "create_time":
+									insertBody.setCreateTime(Long.valueOf(keyValue[1]));
+									break;
+								case "comment":
+									insertBody.setComment(keyValue[1]);
+									break;
+								case "score":
+									insertBody.setScore(Integer.valueOf(keyValue[1]));
+									break;
+							}
 						}
 					}
 				}
+
+				commentFetcher.insertComment(insertBody);
+				result.put("data", r);
+				result.put("code", 0);
+				result.put("message", "insert success!");
+			} else {
+
+				if (paramStr.startsWith("{")) {
+					commentRequstBody = gson.fromJson(paramStr, CommentRequstBody.class);
+				} else {
+					String[] params = paramStr.split("&");
+					if (params.length > 0) {
+						for (String param : params) {
+							String[] keyValue = param.split("=");
+							switch (keyValue[0]) {
+								case "spu_id":
+									commentRequstBody.setSpuId(Long.valueOf(keyValue[1]));
+									break;
+								case "page":
+									commentRequstBody.setPage(Integer.valueOf(keyValue[1]));
+									break;
+								case "page_size":
+									commentRequstBody.setPageSize(Integer.valueOf(keyValue[1]));
+									break;
+								case "day_time":
+									commentRequstBody.setDayTime(Long.valueOf(keyValue[1]));
+									break;
+							}
+						}
+					}
+				}
+
+				if (commentRequstBody == null) {
+					logger.error("Invalid request input " + request.getReader());
+					throw new Exception("invalid request input");
+				}
+
+				logger.info("params {}", gson.toJson(commentRequstBody));
+
+
+				switch (requestType) {
+					case COMMENT:
+						r = commentFetcher.fetchComment(commentRequstBody);
+						break;
+					case COMMENTBYDAY:
+						r = commentFetcher.fetchCommentByDay(commentRequstBody);
+						break;
+					case COUNT:
+						r = commentFetcher.fetchCountByMonth(commentRequstBody);
+						break;
+					case HTML:
+						logger.info("page request received!");
+
+						break;
+					default:
+						r = null;
+						break;
+				}
+
+
+				if (r == null)
+					r = "empty result returned!";
+
+				result.put("data", r);
+				result.put("code", 0);
+				result.put("message", "");
 			}
 
-			if (commentRequstBody == null) {
-				logger.error("Invalid request input " + request.getReader());
-				throw new Exception("invalid request input");
-			}
-
-			logger.info("params {}", gson.toJson(commentRequstBody));
-
-
-			switch (requestType) {
-				case COMMENT:
-					r = commentFetcher.fetchComment(commentRequstBody);
-					break;
-				case COMMENTBYDAY:
-					r = commentFetcher.fetchCommentByDay(commentRequstBody);
-					break;
-				case COUNT:
-					r = commentFetcher.fetchCountByMonth(commentRequstBody);
-					break;
-				case HTML:
-					logger.info("page request received!");
-
-					break;
-				default:
-					r = null;
-					break;
-			}
-
-			Map<String, Object> result = new HashMap<>();
-			if(r == null)
-				r = "empty result returned!";
-
-			result.put("data", r);
-			result.put("code", 0);
-			result.put("message", "");
 
 			response.setContentType(LoboConstants.CONTENTTYPE_JSON_UTF8);
 			response.setStatus(HttpServletResponse.SC_OK);

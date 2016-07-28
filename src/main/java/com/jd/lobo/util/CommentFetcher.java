@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.jd.lobo.bean.CommentBody;
 import com.jd.lobo.bean.CommentRequstBody;
 import com.jd.lobo.bean.CommentResult;
+import com.jd.lobo.bean.InsertBody;
 import com.jd.lobo.cass.CassQueryBuilder;
 import com.jd.lobo.cass.CassSessionFactory;
 import com.jd.lobo.config.LoboConstants;
@@ -35,18 +36,37 @@ public class CommentFetcher {
 
 	public String commentSql = "select token(id), id, sku_id, spu_id, user_id, create_time, comment, replies, pic_path, score" +
 			" from lobo.comment where lucene = '{query : {type:\"match\", field:\"spu_id\", value: %s}}' limit ";
-	public PreparedStatement ps = null;
+	public String insertSql = "insert into lobo.comment (id, sku_id, spu_id, user_id, create_time, comment, replies, pic_path, score) " +
+			"values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+	public PreparedStatement fetchPs = null;
+
 	public Mapper<CommentBody> commentMapper = null;
 	public Map<Long, List<CommentBody>> cacheMap = new HashMap<>();
 	public Map<String, List<CommentBody>> dayCommentCacheMap = new HashMap<>();
+	public Map<Long, Long> tokenMap = new HashMap<>();
 
 
 	public CommentFetcher() {
 		sessionUr = CassSessionFactory.getSession("lobo");
-		ps = sessionUr.prepare(commentSql);
+		fetchPs = sessionUr.prepare(commentSql);
 		commentMapper = new MappingManager(sessionUr).mapper(CommentBody.class);
 		PropertyConfigurator.configure("log4j.properties");
 	}
+
+	public void insertComment(InsertBody insertBody){
+		PreparedStatement insertPs = sessionUr.prepare(insertSql);
+		Random random = new Random();
+
+		Long skuId = insertBody.getSkuId();
+		Long spuId = insertBody.getSpuId();
+		Long userId = insertBody.getUserId();
+		Long createTime = insertBody.getCreateTime();
+		String comment = insertBody.getComment();
+		int score = insertBody.getScore();
+
+		sessionUr.execute(insertPs.bind(random.nextLong(), skuId, spuId, userId, createTime, comment, null, null, score));
+	}
+
 
 	public CommentResult fetchComment(CommentRequstBody requstBody) {
 		CommentResult commentResult = new CommentResult();
@@ -105,7 +125,7 @@ public class CommentFetcher {
 			commentResult.setResult(list);
 			commentResult.setNumber(list.size());
 		} catch (TimeoutException e) {
-			logger.error("timeout when execute query {}", ps.toString());
+			logger.error("timeout when execute query {}", fetchPs.toString());
 		} catch (Exception e) {
 			logger.error("exception happened!", e);
 		}
@@ -235,4 +255,6 @@ public class CommentFetcher {
 
 		return rstMap;
 	}
+
+
 }
