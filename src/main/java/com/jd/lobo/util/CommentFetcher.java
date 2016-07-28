@@ -60,7 +60,8 @@ public class CommentFetcher {
 			if (cacheMap.containsKey(key) && cacheMap.get(key).size() >= index) {
 				list = cacheMap.get(key).subList(index - requstBody.pageSize, index);
 			} else {
-				String query = String.format(commentSql, requstBody.spuId) + LoboConstants.DEFAULT_CASS_FETCH_SIZE;
+				// String query = String.format(commentSql, requstBody.spuId) + LoboConstants.DEFAULT_CASS_FETCH_SIZE;
+				String query = cqb.buildQueryWithFiltering("lobo.comment", key);
 				logger.info("query url: " + query);
 
 				List<CommentBody> tmp = new ArrayList<>();

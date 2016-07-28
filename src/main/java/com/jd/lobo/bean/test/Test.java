@@ -1,10 +1,7 @@
 package com.jd.lobo.bean.test;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by lutong on 7/28/16.
@@ -28,6 +25,10 @@ public class Test {
 		List<Integer> list = new ArrayList<>();
 		for(int i = 0; i < 10; i++)
 			list.add(i);
-		System.out.println(list.subList(-1, 10));
+		System.out.println(list.subList(0, 10));
+
+		Random random = new Random();
+		for(int i = 0; i < 10; i++)
+			System.out.println(random.nextFloat());
 	}
 }

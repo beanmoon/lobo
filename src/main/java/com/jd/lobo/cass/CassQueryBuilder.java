@@ -1,5 +1,6 @@
 package com.jd.lobo.cass;
 
+import com.jd.lobo.config.LoboConstants;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,12 @@ public class CassQueryBuilder {
 
 	private static Logger logger = LoggerFactory.getLogger(CassQueryBuilder.class);
 	private static long daytime = 24 * 3600 * 1000l;
+
+
+	public String buildQueryWithFiltering(String tableName, Long spuId){
+		return  buildQueryWithFiltering(tableName, spuId, null, null);
+	}
+
 
 	public String buildQueryWithFiltering(String tableName, Long spuId, Long createTime){
 		return  buildQueryWithFiltering(tableName, spuId, createTime, createTime + daytime);
@@ -42,10 +49,10 @@ public class CassQueryBuilder {
 			sb.append("}");
 			//String query = String.format("select * from %s where lucene='%s' limit 300", tableName, sb.toString());
 			query = String.format("select token(id), id, sku_id, spu_id, user_id, create_time, comment, replies, pic_path, score " +
-					"from %s where lucene='%s'", tableName, sb.toString());
+					"from %s where lucene='%s' limit %s", tableName, sb.toString(), LoboConstants.DEFAULT_CASS_FETCH_SIZE);
 		} else {
 			query = String.format("select token(id), id, sku_id, spu_id, user_id, create_time, comment, replies, pic_path, score " +
-					"from %s", tableName);
+					"from %s limit %s", tableName, LoboConstants.DEFAULT_CASS_FETCH_SIZE);
 		}
 		
 		logger.debug("Activity pool reload query: {}", query);

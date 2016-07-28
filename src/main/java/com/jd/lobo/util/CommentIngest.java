@@ -36,7 +36,7 @@ public class CommentIngest {
 			String line = null;
 			List<String> picPath = new ArrayList<>();
 			List<String> replies = new ArrayList<>();
-			int score = 5;
+
 			reader.readLine();
 			Long id = 1l;
 			while((line = reader.readLine()) != null){
@@ -49,7 +49,7 @@ public class CommentIngest {
 					// String createTime = fields[25];
 					Long createTime = System.currentTimeMillis();
 					String comment = fields[9];
-					BoundStatement bs = ps.bind(id++, skuId, spuId, userId, createTime + randomTime(), comment, replies, picPath, score);
+					BoundStatement bs = ps.bind(id++, skuId, spuId, userId, createTime + randomTime(), comment, replies, picPath, randomScore());
 
 					session.execute(bs);
 				}
@@ -72,6 +72,24 @@ public class CommentIngest {
 			rst = -rst;
 
 		return rst;
+	}
+
+	static int randomScore(){
+		Random rand = new Random();
+		float f = rand.nextFloat();
+		int score;
+		if(f < 0.01)
+			score = 1;
+		else if (f >= 0.01 && f < 0.05)
+			score = 2;
+		else if (f >= 0.05 && f < 0.12)
+			score = 3;
+		else if (f >= 0.12 && f < 0.3)
+			score = 4;
+		else
+			score = 5;
+
+		return score;
 	}
 
 }
