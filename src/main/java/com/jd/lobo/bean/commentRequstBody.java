@@ -8,13 +8,23 @@ import com.jd.lobo.config.LoboConstants;
  */
 public class CommentRequstBody {
 	@SerializedName("spu_id")
-	public long spuId;
+	public long spuId = 0l;
 
-	public int page;
+	public int page = 1;
 
 	@SerializedName("page_size")
-	public Integer pageSize;
+	public Integer pageSize = 10;
 
+	@SerializedName("day_time")
+	public long dayTime;
+
+	public long getDayTime() {
+		return dayTime;
+	}
+
+	public void setDayTime(long dayTime) {
+		this.dayTime = dayTime;
+	}
 
 	public long getSpuId() {
 		return spuId;

@@ -46,7 +46,9 @@ public class RestServer {
 
 		handler.addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-		handler.addServletWithMapping(JsonRequestServlet.class, "/lobo/comment");
+		handler.addServletWithMapping(CommentRequestServlet.class, "/lobo/comment");
+		handler.addServletWithMapping(CommentByDateRequestServlet.class, "/lobo/day/comment");
+		handler.addServletWithMapping(CountRequestServlet.class, "/lobo/count");
 		handler.addServletWithMapping(HtmlRequstServlet.class, "/lobo/page");
 
 		CassSessionFactory.init(new String[]{"127.0.0.1"});
@@ -59,20 +61,32 @@ public class RestServer {
 	}
 
 	@SuppressWarnings("serial")
-	public static class JsonRequestServlet extends HttpServlet {
-
+	public static class CommentRequestServlet extends HttpServlet {
 		@Override
 		protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			doPostAction(request, response, RequestType.JSON);
+			doPostAction(request, response, RequestType.COMMENT);
 		}
 	}
 
 	@SuppressWarnings("serial")
 	public static class HtmlRequstServlet extends HttpServlet {
-
 		@Override
 		protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 			doPostAction(request, response, RequestType.HTML);
+		}
+	}
+
+	public static class CommentByDateRequestServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+			doPostAction(req, resp, RequestType.COMMENTBYDAY);
+		}
+	}
+
+	public static class CountRequestServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+			doPostAction(req, resp, RequestType.COUNT);
 		}
 	}
 
@@ -80,44 +94,52 @@ public class RestServer {
 	static void doPostAction(HttpServletRequest request, HttpServletResponse response, RequestType requestType) throws ServletException, IOException {
 		try {
 			Object r = null;
-			switch (requestType) {
-				case JSON:
-					// logger.info("reader: " + request.getReader().readLine());
-					String paramStr = request.getReader().readLine();
-					CommentRequstBody commentRequstBody = new CommentRequstBody();
-					if(paramStr.startsWith("{")){
-						commentRequstBody = gson.fromJson(paramStr, CommentRequstBody.class);
-					} else {
-						String[] params = paramStr.split("&");
-						if(params.length == 3){
-							for(String param : params){
-								String[] keyValue = param.split("=");
-								switch (keyValue[0]){
-									case "spu_id":
-										commentRequstBody.setSpuId(Long.valueOf(keyValue[1]));
-										break;
-									case "page":
-										commentRequstBody.setPage(Integer.valueOf(keyValue[1]));
-										break;
-									case "page_size":
-										commentRequstBody.setPageSize(Integer.valueOf(keyValue[1]));
-										break;
-								}
-							}
+			String paramStr = request.getReader().readLine();
+			logger.info("paramStr: " + paramStr);
+			CommentRequstBody commentRequstBody = new CommentRequstBody();
+
+			if(paramStr.startsWith("{")){
+				commentRequstBody = gson.fromJson(paramStr, CommentRequstBody.class);
+			} else {
+				String[] params = paramStr.split("&");
+				if(params.length > 0){
+					for(String param : params){
+						String[] keyValue = param.split("=");
+						switch (keyValue[0]){
+							case "spu_id":
+								commentRequstBody.setSpuId(Long.valueOf(keyValue[1]));
+								break;
+							case "page":
+								commentRequstBody.setPage(Integer.valueOf(keyValue[1]));
+								break;
+							case "page_size":
+								commentRequstBody.setPageSize(Integer.valueOf(keyValue[1]));
+								break;
+							case "day_time":
+								commentRequstBody.setDayTime(Long.valueOf(keyValue[1]));
+								break;
 						}
 					}
+				}
+			}
+
+			if (commentRequstBody == null) {
+				logger.error("Invalid request input " + request.getReader());
+				throw new Exception("invalid request input");
+			}
+
+			logger.info("params {}", gson.toJson(commentRequstBody));
 
 
-					if (commentRequstBody == null) {
-						logger.error("Invalid request input " + request.getReader());
-						throw new Exception("invalid request input");
-					}
-
-					logger.info("params {}", gson.toJson(commentRequstBody));
-
-					logger.info("comment request received!");
-
+			switch (requestType) {
+				case COMMENT:
 					r = commentFetcher.fetchComment(commentRequstBody);
+					break;
+				case COMMENTBYDAY:
+					r = commentFetcher.fetchCommentByDay(commentRequstBody);
+					break;
+				case COUNT:
+					r = commentFetcher.fetchCountByMonth(commentRequstBody);
 					break;
 				case HTML:
 					logger.info("page request received!");

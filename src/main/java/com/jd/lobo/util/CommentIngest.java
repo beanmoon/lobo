@@ -66,8 +66,8 @@ public class CommentIngest {
 
 	static long randomTime(){
 		Random rand = new Random();
-		int range = 3 * 24 * 3600 * 1000;
-		long rst = rand.nextInt(range);
+		int range = 30 * 24 * 3600 * 1000;
+		long rst = (long)(rand.nextDouble() * range);
 		if(rst % 2 == 0)
 			rst = -rst;
 
