@@ -161,6 +161,7 @@ public class RestServer {
 			response.setContentType(LoboConstants.CONTENTTYPE_JSON_UTF8);
 			response.setStatus(HttpServletResponse.SC_OK);
 
+			logger.info("json returned:" + gson.toJson(result));
 			response.getWriter().println(gson.toJson(result));
 		} catch (Exception ex) {
 			logger.error("Failed to process", ex);

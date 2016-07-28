@@ -28,6 +28,6 @@ public class Test {
 		List<Integer> list = new ArrayList<>();
 		for(int i = 0; i < 10; i++)
 			list.add(i);
-		System.out.println(list.subList(0, 10));
+		System.out.println(list.subList(-1, 10));
 	}
 }

@@ -13,6 +13,7 @@ import com.jd.lobo.bean.CommentResult;
 import com.jd.lobo.cass.CassQueryBuilder;
 import com.jd.lobo.cass.CassSessionFactory;
 import com.jd.lobo.config.LoboConstants;
+import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +38,14 @@ public class CommentFetcher {
 	public PreparedStatement ps = null;
 	public Mapper<CommentBody> commentMapper = null;
 	public Map<Long, List<CommentBody>> cacheMap = new HashMap<>();
+	public Map<String, List<CommentBody>> dayCommentCacheMap = new HashMap<>();
 
 
 	public CommentFetcher() {
 		sessionUr = CassSessionFactory.getSession("lobo");
 		ps = sessionUr.prepare(commentSql);
 		commentMapper = new MappingManager(sessionUr).mapper(CommentBody.class);
+		PropertyConfigurator.configure("log4j.properties");
 	}
 
 	public CommentResult fetchComment(CommentRequstBody requstBody) {
@@ -85,7 +88,15 @@ public class CommentFetcher {
 					tmp.add(it.next());
 				}
 				*/
-				cacheMap.put(requstBody.getSpuId(), tmp);
+				if(cacheMap.containsKey(key)){
+					List<CommentBody> oriList = cacheMap.get(key);
+					oriList.addAll(tmp);
+					cacheMap.put(key, oriList);
+					logger.info("list size of spuId {} expanded to {}", key, oriList.size());
+				} else {
+					cacheMap.put(requstBody.getSpuId(), tmp);
+				}
+
 				list = tmp.subList(index - requstBody.pageSize, index);
 			}
 			commentResult.setSpuId(requstBody.spuId);
@@ -106,15 +117,16 @@ public class CommentFetcher {
 		List<CommentBody> list = new ArrayList<>();
 
 		try {
-			Long key = requstBody.getSpuId();
+			String key = requstBody.getSpuId() + "-" + requstBody.getDayTime();
+			Long spuId = requstBody.getSpuId();
 			int pageSize = requstBody.getPageSize();
 			int index = requstBody.getPage() * pageSize;
 			long daytime = requstBody.getDayTime();
 
-			if (cacheMap.containsKey(key) && cacheMap.get(key).size() >= index) {
-				list = cacheMap.get(key).subList(index - pageSize, index);
+			if (dayCommentCacheMap.containsKey(key) && dayCommentCacheMap.get(key).size() >= index) {
+				list = dayCommentCacheMap.get(key).subList(index - pageSize, index);
 			} else {
-				String query = cqb.buildQueryWithFiltering("lobo.comment", key, daytime);
+				String query = cqb.buildQueryWithFiltering("lobo.comment", spuId, daytime);
 				logger.info("query url: " + query);
 
 				ResultSet rs = sessionUr.executeAsync(query).get(LoboConstants.DFEAULT_CASS_FETCH_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -133,7 +145,8 @@ public class CommentFetcher {
 					tmp.add(body);
 				}
 
-				cacheMap.put(key, tmp);
+				dayCommentCacheMap.put(key, tmp);
+
 				list = tmp.subList(index - pageSize, index);
 			}
 		} catch (InterruptedException e1) {
