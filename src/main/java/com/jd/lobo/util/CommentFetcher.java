@@ -56,6 +56,7 @@ public class CommentFetcher {
 
 			Long key = requstBody.getSpuId();
 			int index = requstBody.getPage() * requstBody.getPageSize();
+			int pageSize = requstBody.getPageSize();
 			if (cacheMap.containsKey(key) && cacheMap.get(key).size() >= index) {
 				list = cacheMap.get(key).subList(index - requstBody.pageSize, index);
 			} else {
@@ -97,7 +98,7 @@ public class CommentFetcher {
 					cacheMap.put(requstBody.getSpuId(), tmp);
 				}
 
-				list = tmp.subList(index - requstBody.pageSize, index);
+				list = tmp.subList(index - pageSize, index < tmp.size() ? index : tmp.size());
 			}
 			commentResult.setSpuId(requstBody.spuId);
 			commentResult.setResult(list);
@@ -145,9 +146,16 @@ public class CommentFetcher {
 					tmp.add(body);
 				}
 
-				dayCommentCacheMap.put(key, tmp);
+				if(dayCommentCacheMap.containsKey(key)){
+					List<CommentBody> oriList = dayCommentCacheMap.get(key);
+					oriList.addAll(tmp);
+					dayCommentCacheMap.put(key, oriList);
+					logger.info("list size of spuId {} expanded to {}", key, oriList.size());
+				} else {
+					dayCommentCacheMap.put(key, tmp);
+				}
 
-				list = tmp.subList(index - pageSize, index);
+				list = tmp.subList(index - pageSize, index < tmp.size() ? index : tmp.size());
 			}
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
